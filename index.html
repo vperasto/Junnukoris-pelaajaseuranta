@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fi" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- SEO & Meta Tags -->
+    <title>Junnukoris - Pelaajaseuranta & Tilastot</title>
+    <meta name="description" content="Helppokäyttöinen sovellus juniorikoripallon pelaajavaihtojen, peliajan ja pisteiden seurantaan. Valmentajan työkalu reiluun peliin ja statistiikkaan." />
+    <meta name="keywords" content="koripallo, juniorikoripallo, pelaajaseuranta, peliaika, tilastot, valmentaja, koris, vaihtopenkki, reilu peli" />
+    <meta name="author" content="Vesa Perasto" />
+    <meta name="theme-color" content="#18181b" />
+    <meta name="application-name" content="Junnukoris Tracker" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Junnukoris - Pelaajaseuranta & Tilastot" />
+    <meta property="og:description" content="Pidä kirjaa peliajasta, vaihdoista ja pisteistä helposti. Reaaliaikainen seuranta juniorivalmentajille." />
+    <meta property="og:site_name" content="Junnukoris Tracker" />
+    
+    <!-- Favicon (Data URI for immediate loading without external assets) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏀</text></svg>">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+      }
+    }
+    </script>
+  </head>
+  <body class="bg-zinc-100 text-zinc-900 h-full overflow-hidden">
+    <div id="root" class="h-full"></div>
+    <!-- Entry point for the application - Critical for correct loading in build environments -->
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>

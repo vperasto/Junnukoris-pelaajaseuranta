@@ -1,0 +1,5 @@
+{
+  "name": "Junnukoris pelaajaseuranta",
+  "description": "A comprehensive tracking tool for Junior Basketball coaches. Manages rosters, tracks real-time playing minutes to ensure fair play, logs substitutions, and utilizes Gemini AI for game analysis and lineup suggestions.",
+  "requestFramePermissions": []
+}
