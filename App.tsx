@@ -1,27 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Users, BrainCircuit, History, X, Settings, Plus, Trash2, Pencil, Check, Ban, AlertTriangle, FileText, Flag, Download, Copy, ClipboardCheck, MessageSquareQuote, Users2, Stethoscope, ListTodo, Flame, Snowflake, Mail, Calendar, Clock, NotebookPen, CornerDownLeft, HelpCircle, MousePointerClick, Move, GraduationCap, Trophy, MinusCircle, PlusCircle, PenTool, Upload, Terminal, Hash, Undo2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Users, BrainCircuit, History, X, Settings, Plus, Trash2, Pencil, Check, Ban, AlertTriangle, FileText, Flag, Download, Copy, ClipboardCheck, MessageSquareQuote, Users2, Stethoscope, ListTodo, Flame, Snowflake, Mail, Calendar, Clock, NotebookPen, CornerDownLeft, HelpCircle, MousePointerClick, Move, GraduationCap, Trophy, MinusCircle, PlusCircle, PenTool, Upload, Terminal, Hash, Undo2, Timer, Scale } from 'lucide-react';
 import { Player, GameEvent, GameState, GameMode, SavedGame, Team } from './types';
 import { PlayerCard } from './components/PlayerCard';
 
 // ANONYMIZED DEFAULT ROSTER
 const DEFAULT_ROSTER: Player[] = [
-  { id: 'p1', name: 'Pelaaja 1', number: 4, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0 },
-  { id: 'p2', name: 'Pelaaja 2', number: 5, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0 },
-  { id: 'p3', name: 'Pelaaja 3', number: 6, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0 },
-  { id: 'p4', name: 'Pelaaja 4', number: 7, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0 },
-  { id: 'p5', name: 'Pelaaja 5', number: 8, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0 },
+  { id: 'p1', name: 'Pelaaja 1', number: 4, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0, periodSecondsPlayedSnapshot: 0 },
+  { id: 'p2', name: 'Pelaaja 2', number: 5, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0, periodSecondsPlayedSnapshot: 0 },
+  { id: 'p3', name: 'Pelaaja 3', number: 6, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0, periodSecondsPlayedSnapshot: 0 },
+  { id: 'p4', name: 'Pelaaja 4', number: 7, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0, periodSecondsPlayedSnapshot: 0 },
+  { id: 'p5', name: 'Pelaaja 5', number: 8, isOnCourt: false, secondsPlayed: 0, points: 0, isFouledOut: false, consecutiveSecondsOnCourt: 0, consecutiveSecondsOnBench: 0, periodSecondsPlayedSnapshot: 0 },
 ];
 
 const CHANGELOG = [
+  { date: '2025-05-24 13:45', desc: 'Päivitys: Yläpalkin pikanäppäimet (plus) suuremmiksi.' },
+  { date: '2025-05-24 13:30', desc: 'Päivitys: Yläpalkin pistelaskurin painikkeita suurennettu.' },
+  { date: '2025-05-24 13:00', desc: 'Päivitys: Pisteiden kirjausnäkymä optimoitu tabletille (suuremmat napit).' },
+  { date: '2025-05-24 12:00', desc: 'Päivitys: Älykäs peliajan skaalaus ja uusi vaihtomittari (vihreä-keltainen-punainen) pelaajakortissa.' },
   { date: '2025-05-24 11:00', desc: 'Päivitys: Värikoodaus myös juuri kentälle tulleille (Vihreä/Salama) ja näkyvyys vaihtovalikossa.' },
   { date: '2025-05-24 10:30', desc: 'Päivitys: Vaihtopenkin älykäs järjestys. Juuri kentältä tulleet (90s huili) näkyvät harmaalla ja siirtyvät listan hännille.' },
-  { date: '2025-05-24 10:00', desc: 'Helppokäyttöisyys: "Peruuta" -toiminto, automaattinen erätuloksen kirjaus ja pikapisteet yläpalkkiin.' },
 ];
 
 const TODO_LIST = [
   { title: "Peruuta (Undo)", desc: "Mahdollisuus peruuttaa viimeisin toiminto.", status: 'DONE' },
   { title: "Automaattikirjaus", desc: "Kirjaa erätulos automaattisesti muistioon erän vaihtuessa.", status: 'DONE' },
-  { title: "Älykäs penkki", desc: "Värikoodaus juuri kentältä tulleille.", status: 'DONE' },
+  { title: "Peliajan skaalaus", desc: "Korjaa 'juoksevan ajan' aiheuttama virhe.", status: 'DONE' },
   { title: "Virhelaskuri (1-5)", desc: "Pelaajalle 5 pallukkaa virheiden seurantaan.", status: 'TODO' },
 ];
 
@@ -45,7 +48,12 @@ export default function App() {
     isRunning: false,
     period: 1,
     gameClockSeconds: 0,
+    periodStartClockSeconds: 0, // Track when the current period started
   });
+  
+  // Settings
+  const [defaultPeriodLength, setDefaultPeriodLength] = useState(8); // Minutes
+
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.FOUR_VS_FOUR);
   
@@ -73,9 +81,11 @@ export default function App() {
   const [historyStack, setHistoryStack] = useState<HistorySnapshot[]>([]);
   const [savedGames, setSavedGames] = useState<SavedGame[]>([]);
 
-  // End Game State
+  // End Game / Period State
   const [isEndGameModalOpen, setIsEndGameModalOpen] = useState(false);
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+  const [correctionMinutes, setCorrectionMinutes] = useState(defaultPeriodLength); // For period correction input
+  
   const [downloadReport, setDownloadReport] = useState(true);
   const [gameName, setGameName] = useState(''); 
   const [gameNotes, setGameNotes] = useState('');
@@ -105,6 +115,11 @@ export default function App() {
     const loadedTeams = localStorage.getItem('juniorBasketTeams');
     if (loadedTeams) {
         try { setSavedTeams(JSON.parse(loadedTeams)); } catch (e) { console.error("Teams parse error", e); }
+    }
+    const savedPeriodLength = localStorage.getItem('defaultPeriodLength');
+    if (savedPeriodLength) {
+        setCorrectionMinutes(parseInt(savedPeriodLength));
+        setDefaultPeriodLength(parseInt(savedPeriodLength));
     }
   }, []);
 
@@ -275,29 +290,76 @@ export default function App() {
 
   const handleNextPeriodClick = () => {
     setGameState(prev => ({ ...prev, isRunning: false }));
+    // Reset correction input to default
+    setCorrectionMinutes(defaultPeriodLength);
     setIsPeriodModalOpen(true);
+  };
+
+  const applyTimeCorrection = () => {
+      const appDurationSeconds = gameState.gameClockSeconds - gameState.periodStartClockSeconds;
+      const officialDurationSeconds = correctionMinutes * 60;
+      
+      if (appDurationSeconds > 0 && officialDurationSeconds > 0) {
+          const scalingFactor = officialDurationSeconds / appDurationSeconds;
+          
+          setPlayers(prev => prev.map(p => {
+              // Calculate how much time they accumulated during THIS period
+              const gainedInPeriod = p.secondsPlayed - (p.periodSecondsPlayedSnapshot || 0);
+              
+              if (gainedInPeriod > 0) {
+                   const correctedGain = Math.floor(gainedInPeriod * scalingFactor);
+                   // Calculate new total
+                   const newTotal = (p.periodSecondsPlayedSnapshot || 0) + correctedGain;
+                   
+                   // Also scale their current shift duration if they are on court
+                   const correctedShift = p.isOnCourt 
+                        ? Math.floor((p.consecutiveSecondsOnCourt || 0) * scalingFactor)
+                        : (p.consecutiveSecondsOnCourt || 0);
+
+                   return {
+                       ...p,
+                       secondsPlayed: newTotal,
+                       consecutiveSecondsOnCourt: correctedShift
+                   };
+              }
+              return p;
+          }));
+          addEvent('TIME_CORRECTION', `Peliaika skaalattu: Sovellus ${formatTime(appDurationSeconds)} -> Virallinen ${formatTime(officialDurationSeconds)}`);
+      }
   };
 
   const confirmNextPeriod = (keepLineup: boolean) => {
       saveSnapshot();
       
-      // 1. Auto-log score before changing period
-      logScoreToNotes(false); // False = auto mode
+      // 1. Auto-log score
+      logScoreToNotes(false); 
       addEvent('PERIOD_END', `Erä ${gameState.period} päättyi (${scoreUs}-${scoreThem}).`);
 
-      // 2. Change Period
-      setGameState(prev => ({ ...prev, period: prev.period + 1 }));
+      // 2. Apply Time Correction
+      applyTimeCorrection();
+
+      // 3. Update Period State
+      const nextPeriodStartClock = gameState.gameClockSeconds; // Note: This will be the App clock continuing
       
-      if (keepLineup) {
-         // No lineup change
-      } else {
-          // Move everyone to bench
-          setPlayers(prev => prev.map(p => ({
+      setGameState(prev => ({ 
+          ...prev, 
+          period: prev.period + 1,
+          periodStartClockSeconds: prev.gameClockSeconds // Mark new start time
+      }));
+      
+      setPlayers(prev => prev.map(p => {
+          let updatedPlayer = { 
               ...p,
-              isOnCourt: false,
-              consecutiveSecondsOnCourt: 0 
-          })));
-      }
+              periodSecondsPlayedSnapshot: p.secondsPlayed // Snapshot for next period
+          };
+
+          if (!keepLineup) {
+              updatedPlayer.isOnCourt = false;
+              updatedPlayer.consecutiveSecondsOnCourt = 0;
+          }
+          return updatedPlayer;
+      }));
+      
       setIsPeriodModalOpen(false);
   };
 
@@ -313,12 +375,14 @@ export default function App() {
           consecutiveSecondsOnCourt: 0,
           consecutiveSecondsOnBench: 0,
           lastSubOutTime: undefined,
-          lastSubInTime: undefined
+          lastSubInTime: undefined,
+          periodSecondsPlayedSnapshot: 0
       })));
       setGameState({
           isRunning: false,
           period: 1,
-          gameClockSeconds: 0
+          gameClockSeconds: 0,
+          periodStartClockSeconds: 0
       });
       setEvents([]);
       setGameName('');
@@ -342,7 +406,8 @@ export default function App() {
           isFouledOut: false,
           isInjured: false,
           consecutiveSecondsOnCourt: 0,
-          consecutiveSecondsOnBench: 0
+          consecutiveSecondsOnBench: 0,
+          periodSecondsPlayedSnapshot: 0
       }));
       setPlayers(newRoster);
       resetGame(); 
@@ -602,6 +667,11 @@ OHJEET:
     }
   };
 
+  const updateDefaultPeriodLength = (val: number) => {
+      setDefaultPeriodLength(val);
+      localStorage.setItem('defaultPeriodLength', val.toString());
+  };
+
   // Drag and drop wrappers
   const onDragStart = (e: React.DragEvent, player: Player) => {
     if (player.isFouledOut || player.isInjured) return;
@@ -653,7 +723,8 @@ OHJEET:
             points: 0,
             isFouledOut: false,
             consecutiveSecondsOnCourt: 0,
-            consecutiveSecondsOnBench: 0
+            consecutiveSecondsOnBench: 0,
+            periodSecondsPlayedSnapshot: 0
         };
         setPlayers([...players, newPlayer]);
         setNewPlayerName('');
@@ -719,6 +790,9 @@ OHJEET:
 
   const courtPlayers = players.filter(p => p.isOnCourt);
   
+  // Calculate who has been on court the longest (for the Next Out indicator)
+  const maxConsecutive = Math.max(...courtPlayers.map(p => p.consecutiveSecondsOnCourt || 0));
+  
   // BENCH SORTING LOGIC
   const benchPlayers = players
       .filter(p => !p.isOnCourt)
@@ -744,48 +818,48 @@ OHJEET:
       {/* 1. HEADER */}
       <header className="bg-zinc-900 text-white p-2 md:p-3 shrink-0 border-b-4 border-black z-20 flex justify-between items-center relative">
           <div className="flex flex-col">
-             <span className="text-[10px] md:text-xs text-zinc-400 uppercase tracking-widest font-bold">Peliaika</span>
+             <span className="text-[10px] md:text-xs text-zinc-400 uppercase tracking-widest font-bold">Peliaika (App)</span>
              <span className="text-2xl md:text-3xl font-mono font-bold leading-none text-yellow-400 tracking-tighter">
                {formatTime(gameState.gameClockSeconds)}
              </span>
           </div>
           
           {/* Team Score Display - QUICK ACTIONS */}
-          <div className="flex items-center gap-1 md:gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
              {/* Us */}
              <div className="flex flex-col items-center">
-                 <span className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Me</span>
-                 <div className="flex items-center bg-zinc-800 rounded-sm border border-zinc-700 overflow-hidden">
+                 <span className="text-[10px] text-zinc-500 uppercase font-bold mb-0.5">Me</span>
+                 <div className="flex items-center bg-zinc-800 rounded-sm border border-zinc-700 overflow-hidden shadow-lg">
                      <button 
                         onClick={() => setIsScoreModalOpen(true)}
-                        className="px-3 py-1 text-2xl font-mono font-bold text-yellow-400 hover:bg-zinc-700"
+                        className="px-4 py-2 text-3xl md:text-4xl font-mono font-bold text-yellow-400 hover:bg-zinc-700 min-w-[3.5rem]"
                     >
                         {scoreUs}
                      </button>
                      <button 
                         onClick={() => handleQuickScore('US')}
-                        className="bg-zinc-700 hover:bg-zinc-600 text-white p-1 h-full flex items-center justify-center border-l border-zinc-600 active:bg-zinc-500"
+                        className="bg-zinc-700 hover:bg-zinc-600 text-white w-16 md:w-20 h-full flex items-center justify-center border-l border-zinc-600 active:bg-zinc-500"
                      >
-                         <Plus size={16} />
+                         <Plus size={32} />
                      </button>
                  </div>
              </div>
 
-             <span className="text-zinc-600 font-bold mt-4">-</span>
+             <span className="text-zinc-600 font-bold mt-6 text-xl">-</span>
 
              {/* Them */}
              <div className="flex flex-col items-center">
-                 <span className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Vast</span>
-                 <div className="flex items-center bg-zinc-800 rounded-sm border border-zinc-700 overflow-hidden">
+                 <span className="text-[10px] text-zinc-500 uppercase font-bold mb-0.5">Vast</span>
+                 <div className="flex items-center bg-zinc-800 rounded-sm border border-zinc-700 overflow-hidden shadow-lg">
                      <button 
                          onClick={() => handleQuickScore('THEM')}
-                         className="bg-zinc-700 hover:bg-zinc-600 text-white p-1 h-full flex items-center justify-center border-r border-zinc-600 active:bg-zinc-500"
+                         className="bg-zinc-700 hover:bg-zinc-600 text-white w-16 md:w-20 h-full flex items-center justify-center border-r border-zinc-600 active:bg-zinc-500"
                      >
-                         <Plus size={16} />
+                         <Plus size={32} />
                      </button>
                      <button 
                         onClick={() => setIsScoreModalOpen(true)}
-                        className="px-3 py-1 text-2xl font-mono font-bold text-white hover:bg-zinc-700"
+                        className="px-4 py-2 text-3xl md:text-4xl font-mono font-bold text-white hover:bg-zinc-700 min-w-[3.5rem]"
                      >
                         {scoreThem}
                      </button>
@@ -866,6 +940,8 @@ OHJEET:
                                 onDrop={onDrop}
                                 // Pass isFresh prop
                                 isFresh={(gameState.gameClockSeconds - (player.lastSubInTime || -9999)) < COOLDOWN_THRESHOLD}
+                                // Highlight the player who should sub out next
+                                isLongestShift={player.consecutiveSecondsOnCourt === maxConsecutive && maxConsecutive > 60}
                             />
                         ))}
                         {courtPlayers.length === 0 && (
@@ -889,9 +965,15 @@ OHJEET:
                     </button>
                     <button 
                         onClick={() => setActiveTab('NOTES')}
-                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'NOTES' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
+                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r-2 border-black transition-colors ${activeTab === 'NOTES' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
                     >
                         <NotebookPen size={16} /> <span className="hidden sm:inline">Muistio</span>
+                    </button>
+                     <button 
+                        onClick={() => setActiveTab('POINTS')}
+                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'POINTS' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
+                    >
+                        <Trophy size={16} /> <span className="hidden sm:inline">Pisteet</span>
                     </button>
                 </div>
 
@@ -930,56 +1012,56 @@ OHJEET:
                     )}
 
                     {activeTab === 'POINTS' && (
-                        <div className="absolute inset-0 p-1 flex flex-col h-full bg-zinc-50">
+                        <div className="absolute inset-0 p-2 flex flex-col h-full bg-zinc-100">
                             {/* Correction Toggle & Header - Compact */}
-                            <div className="flex justify-between items-center px-1 mb-1 shrink-0 h-8">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                            <div className="flex justify-between items-center px-1 mb-2 shrink-0 h-10">
+                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                                     {courtPlayers.length > 0 ? "Kirjaa pisteet" : ""}
                                 </span>
                                 <button 
                                     onClick={() => setIsCorrectionMode(!isCorrectionMode)}
-                                    className={`flex items-center gap-1 px-2 py-1 border border-black text-[10px] font-bold uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all active:shadow-none active:translate-y-[1px]
-                                    ${isCorrectionMode ? 'bg-red-100 text-red-600 border-red-500' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
+                                    className={`flex items-center gap-1 px-3 py-1.5 border-2 border-black text-xs font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] transition-all active:shadow-none active:translate-y-[1px]
+                                    ${isCorrectionMode ? 'bg-red-100 text-red-600 border-red-500' : 'bg-white text-zinc-600 hover:bg-white'}`}
                                 >
-                                    <PenTool size={10} />
+                                    <PenTool size={12} />
                                     {isCorrectionMode ? "Korjaustila" : "Korjaus"}
                                 </button>
                             </div>
 
                             {/* Player List for Scoring - Flex-1 to fill space */}
                             {courtPlayers.length === 0 ? (
-                                <div className="flex-1 flex items-center justify-center border-2 border-dashed border-zinc-300 m-2">
-                                    <p className="text-zinc-400 font-mono text-xs uppercase">Ei pelaajia kentällä</p>
+                                <div className="flex-1 flex items-center justify-center border-2 border-dashed border-zinc-300 m-2 bg-zinc-50 rounded-lg">
+                                    <p className="text-zinc-400 font-mono text-sm uppercase">Ei pelaajia kentällä</p>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex flex-col gap-1 min-h-0 overflow-y-auto">
+                                <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto pb-2">
                                     {courtPlayers.map(player => (
-                                        <div key={player.id} className="flex-1 min-h-[50px] max-h-[70px] flex items-center gap-2 bg-white border-2 border-black px-2 shadow-sm">
-                                            {/* Player Info - Compact */}
-                                            <div className="w-16 sm:w-20 shrink-0 flex flex-col justify-center leading-none">
-                                                <div className="flex items-baseline gap-1">
-                                                    <span className="font-mono font-bold text-base">{player.number}</span>
-                                                    <span className="font-bold uppercase truncate text-xs w-full">{player.name}</span>
+                                        <div key={player.id} className="shrink-0 min-h-[80px] flex items-center gap-3 bg-white border-2 border-black px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
+                                            {/* Player Info - Bigger for Tablet */}
+                                            <div className="w-16 sm:w-24 shrink-0 flex flex-col justify-center leading-none">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="w-8 h-8 flex items-center justify-center bg-black text-white font-mono font-bold text-lg border-2 border-black">{player.number}</span>
                                                 </div>
-                                                <div className="text-[9px] text-zinc-500 font-mono flex items-center gap-1 mt-0.5">
-                                                    <Trophy size={8} /> {player.points}
+                                                <span className="font-bold uppercase truncate text-sm w-full leading-tight">{player.name}</span>
+                                                <div className="text-[10px] text-zinc-500 font-mono flex items-center gap-1 mt-1 font-bold">
+                                                    <Trophy size={10} className="text-yellow-600"/> {player.points}
                                                 </div>
                                             </div>
 
-                                            {/* Buttons - Stretch to fill height, max height limited */}
-                                            <div className="flex-1 grid grid-cols-3 gap-1 h-full py-1">
+                                            {/* Buttons - Stretch to fill height, max height REMOVED for easier touch */}
+                                            <div className="flex-1 grid grid-cols-3 gap-2 h-full py-2">
                                                 {[1, 2, 3].map(points => (
                                                     <button 
                                                         key={points}
                                                         onClick={() => handleScore(player.id, points)}
-                                                        className={`h-full max-h-10 border-2 font-bold font-mono text-base flex items-center justify-center gap-1 transition-all active:scale-95 rounded-sm
+                                                        className={`h-full w-full border-2 font-bold font-mono text-2xl flex items-center justify-center gap-1 transition-transform active:scale-95 touch-manipulation rounded-md
                                                             ${isCorrectionMode 
                                                                 ? 'border-red-500 bg-red-50 text-red-600 hover:bg-red-100' 
-                                                                : 'border-black bg-white text-black hover:bg-zinc-100 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none'
+                                                                : 'border-zinc-300 bg-zinc-50 text-black hover:bg-white hover:border-black'
                                                             }
                                                         `}
                                                     >
-                                                        {isCorrectionMode ? <MinusCircle size={16} strokeWidth={2.5} /> : <PlusCircle size={16} strokeWidth={2.5} />}
+                                                        {isCorrectionMode ? <MinusCircle size={20} strokeWidth={3} /> : <PlusCircle size={20} strokeWidth={3} />}
                                                         {points}
                                                     </button>
                                                 ))}
@@ -1274,25 +1356,49 @@ OHJEET:
                 className="bg-white w-full max-w-sm border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col gap-4 mx-4 animate-in zoom-in-95" 
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center border-b border-zinc-200 pb-2">
                     <h3 className="font-bold text-lg uppercase">Erä {gameState.period} päättyi</h3>
                     <button onClick={() => setIsPeriodModalOpen(false)}><X size={24}/></button>
                 </div>
-                <p className="text-sm text-zinc-600">Miten jatketaan seuraavaan erään?</p>
-                <div className="flex flex-col gap-2">
+                
+                {/* Time Correction UI */}
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-sm my-2">
+                    <h4 className="font-bold text-xs uppercase flex items-center gap-1 text-yellow-800 mb-2">
+                        <Scale size={14}/> Peliajan täsmäytys
+                    </h4>
+                    <p className="text-xs text-zinc-600 mb-2 leading-tight">
+                        Sovelluksen kello kävi <strong>{formatTime(gameState.gameClockSeconds - gameState.periodStartClockSeconds)}</strong>.
+                        Oliko erän todellinen pituus kuitenkin lyhyempi (esim. katkojen takia)?
+                    </p>
+                    <div className="flex items-center gap-2">
+                         <span className="text-xs font-bold uppercase text-zinc-500">Virallinen pituus:</span>
+                         <input 
+                            type="number" 
+                            className="w-14 p-1 border-2 border-black text-center font-mono font-bold"
+                            value={correctionMinutes}
+                            onChange={(e) => setCorrectionMinutes(parseInt(e.target.value) || 0)}
+                         />
+                         <span className="text-xs font-bold uppercase text-zinc-500">min</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-400 mt-2 italic">
+                        Jos muutat aikaa, kaikkien peliminuutteja skaalataan alaspäin suhteessa.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-2">
                     <button 
                         onClick={() => confirmNextPeriod(true)}
-                        className="p-4 border-2 border-black bg-yellow-400 font-bold uppercase text-black hover:bg-yellow-500 text-left"
+                        className="p-3 border-2 border-black bg-yellow-400 font-bold uppercase text-black hover:bg-yellow-500 text-left text-sm"
                     >
                         1. Jatka samalla nelikolla
-                        <span className="block text-[10px] font-normal lowercase opacity-80">Pelaajat pysyvät kentällä</span>
+                        <span className="block text-[10px] font-normal lowercase opacity-80">Hyväksy aika ja jatka</span>
                     </button>
                     <button 
                          onClick={() => confirmNextPeriod(false)}
-                         className="p-4 border-2 border-black bg-white font-bold uppercase text-black hover:bg-zinc-100 text-left"
+                         className="p-3 border-2 border-black bg-white font-bold uppercase text-black hover:bg-zinc-100 text-left text-sm"
                     >
                         2. Valitse uusi nelikko
-                        <span className="block text-[10px] font-normal lowercase opacity-80">Kaikki siirtyvät vaihtoon</span>
+                        <span className="block text-[10px] font-normal lowercase opacity-80">Hyväksy aika ja tyhjennä kenttä</span>
                     </button>
                 </div>
             </div>
@@ -1307,12 +1413,31 @@ OHJEET:
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-4 bg-black text-white flex justify-between items-center shrink-0">
-                    <h3 className="font-bold text-lg uppercase tracking-wider">Hallinnoi joukkuetta</h3>
+                    <h3 className="font-bold text-lg uppercase tracking-wider">Asetukset & Joukkue</h3>
                     <button onClick={() => setIsManagePlayersOpen(false)} className="p-1 border border-white hover:bg-zinc-800"><X size={20}/></button>
                 </div>
                 
                 <div className="p-4 overflow-y-auto bg-zinc-50 flex-1">
                     
+                    {/* SETTINGS SECTION */}
+                    <div className="mb-6 p-4 bg-white border-2 border-black shadow-sm">
+                        <h4 className="text-xs font-bold text-black uppercase mb-3 flex items-center gap-2"><Settings size={14}/> Pelin asetukset</h4>
+                        
+                        <div className="flex items-center justify-between gap-4">
+                            <label className="text-xs font-bold text-zinc-500 uppercase">Erän virallinen pituus</label>
+                            <div className="flex items-center gap-1">
+                                <input 
+                                    type="number" 
+                                    className="w-12 p-1 border-2 border-black text-center font-mono font-bold"
+                                    value={defaultPeriodLength}
+                                    onChange={(e) => updateDefaultPeriodLength(parseInt(e.target.value) || 8)}
+                                />
+                                <span className="text-xs font-bold text-zinc-500">min</span>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 mt-2">Käytetään oletuksena peliajan korjauksessa erän lopussa.</p>
+                    </div>
+
                     {/* TEAM IMPORT SECTION */}
                     <div className="mb-6 p-4 bg-zinc-100 border border-black text-center">
                         <input 
@@ -1345,9 +1470,6 @@ OHJEET:
                                     </button>
                                 ))}
                              </div>
-                        )}
-                        {savedTeams.length === 0 && (
-                            <p className="text-[10px] text-zinc-500 font-mono">Tuo JSON-tiedosto saadaksesi joukkueet valittavaksi.</p>
                         )}
                     </div>
 
@@ -1606,10 +1728,10 @@ OHJEET:
                                  </div>
                              </div>
                              <div className="flex items-start gap-3">
-                                 <div className="p-2 bg-white border border-black"><Hash size={20} /></div>
+                                 <div className="p-2 bg-white border border-black"><Timer size={20} /></div>
                                  <div>
-                                     <span className="font-bold text-sm block">Tulostaulu</span>
-                                     <span className="text-xs text-zinc-600">Klikkaa yläpalkin pisteitä muokataksesi tulosta ja kirjataksesi erätuloksia.</span>
+                                     <span className="font-bold text-sm block">Peliajan korjaus</span>
+                                     <span className="text-xs text-zinc-600">Erän lopussa voit syöttää virallisen peliajan, ja sovellus korjaa minuutit automaattisesti.</span>
                                  </div>
                              </div>
                              <div className="flex items-start gap-3">

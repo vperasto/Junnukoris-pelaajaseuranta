@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Player } from '../types';
-import { Clock, Shirt, Ban, Flame, Snowflake, Stethoscope, Trophy, Hourglass, Zap } from 'lucide-react';
+import { Clock, Shirt, Ban, Flame, Snowflake, Stethoscope, Trophy, Hourglass, Zap, ArrowRightFromLine } from 'lucide-react';
 
 interface PlayerCardProps {
   player: Player;
@@ -11,6 +11,7 @@ interface PlayerCardProps {
   isDraggable?: boolean;
   isRecentSub?: boolean; // Just came OFF court (Cooling down)
   isFresh?: boolean; // Just came ON court (Fresh legs)
+  isLongestShift?: boolean; // Has been on court the longest
 }
 
 export const PlayerCard: React.FC<PlayerCardProps> = ({ 
@@ -21,7 +22,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   onDrop,
   isDraggable,
   isRecentSub = false,
-  isFresh = false
+  isFresh = false,
+  isLongestShift = false
 }) => {
   
   const formatTime = (seconds: number) => {
@@ -44,10 +46,13 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   };
 
   // E-Paper / Brutalist Styles
-  const baseStyles = "relative flex items-center justify-between transition-transform select-none cursor-pointer touch-manipulation";
+  const baseStyles = "relative flex items-center justify-between transition-transform select-none cursor-pointer touch-manipulation overflow-hidden";
   
   // Logic for status icons
-  const isHot = (player.consecutiveSecondsOnCourt || 0) > 240; // > 4 mins
+  const shiftSeconds = player.consecutiveSecondsOnCourt || 0;
+  const isHot = shiftSeconds > 240; // > 4 mins (Red)
+  const isMedium = shiftSeconds > 90; // > 1.5 mins (Yellow)
+  
   const isCold = (player.consecutiveSecondsOnBench || 0) > 300; // > 5 mins
   const isDisabled = player.isFouledOut || player.isInjured;
   
@@ -73,7 +78,13 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       cardBackground = 'bg-white';
       cardBorder = 'border-2 border-black';
       cardShadow = 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]';
-      if (isHot) cardBorder = 'border-2 border-orange-500 ring-2 ring-orange-500';
+      
+      // Highlight "Next Out" candidate
+      if (isLongestShift && !isDisabled) {
+          cardBorder = 'border-2 border-red-500 ring-2 ring-red-200 animate-pulse';
+      } else if (isHot) {
+          cardBorder = 'border-2 border-orange-500';
+      }
   } else if (variant === 'BENCH') {
       // STANDARD BENCH
       if (isCold) {
@@ -89,6 +100,12 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       cardShadow = 'shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none';
   }
 
+  // Shift Meter Calculation (Max 5 mins = 100%)
+  const shiftPercentage = Math.min(100, (shiftSeconds / 300) * 100);
+  let barColor = 'bg-lime-500';
+  if (shiftSeconds > 240) barColor = 'bg-red-500';
+  else if (shiftSeconds > 90) barColor = 'bg-yellow-400';
+
   return (
     <div 
       className={`${baseStyles} ${cardBackground} ${cardBorder} ${cardShadow} ${variant === 'COURT' ? 'p-3 h-24' : 'p-2 h-16'} ${variant === 'MODAL' ? 'mb-2' : ''}`}
@@ -98,7 +115,14 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="flex items-center gap-3 w-full">
+      {/* SHIFT METER (Background Bar) for Court Players */}
+      {variant === 'COURT' && !isDisabled && (
+          <div className="absolute bottom-0 left-0 h-1.5 transition-all duration-1000 ease-linear" style={{ width: `${shiftPercentage}%` }}>
+              <div className={`w-full h-full ${barColor}`}></div>
+          </div>
+      )}
+
+      <div className="flex items-center gap-3 w-full relative z-10">
         {/* Number Badge */}
         <div className={`
           flex items-center justify-center font-bold border-2 border-black shrink-0 font-mono relative
@@ -119,8 +143,11 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
             <h3 className={`font-bold truncate text-black uppercase tracking-tight ${variant === 'COURT' ? 'text-base' : 'text-sm'} ${isDisabled ? 'line-through text-zinc-500' : ''}`}>
               {player.name}
             </h3>
-            {/* Status Icons */}
-            {!isDisabled && isHot && variant === 'COURT' && !isFresh && <Flame size={16} className="text-orange-500 animate-pulse" fill="currentColor" />}
+            
+            {/* Context Icons */}
+            {!isDisabled && isLongestShift && variant === 'COURT' && (
+                <span className="text-[9px] bg-red-100 text-red-600 px-1 font-bold border border-red-200 animate-pulse rounded-sm">NEXT OUT</span>
+            )}
             {!isDisabled && isCold && variant === 'BENCH' && !isRecentSub && <Snowflake size={16} className="text-blue-400" />}
             {!isDisabled && isRecentSub && <Hourglass size={14} className="text-slate-500 animate-spin-slow" />}
             {!isDisabled && isFresh && <Zap size={14} className="text-lime-600 fill-current" />}

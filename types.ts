@@ -12,6 +12,7 @@ export interface Player {
   consecutiveSecondsOnBench?: number; // New: Track time sat on bench
   lastSubOutTime?: number; // New: Timestamp (game clock) when player last left the court
   lastSubInTime?: number; // New: Timestamp (game clock) when player entered the court
+  periodSecondsPlayedSnapshot?: number; // New: Used to calculate delta for period scaling
 }
 
 export interface Team {
@@ -22,7 +23,7 @@ export interface Team {
 
 export interface GameEvent {
   id: string;
-  type: 'SUBSTITUTION' | 'START' | 'PAUSE' | 'PERIOD_END' | 'FOUL_OUT' | 'INJURY' | 'RECOVERY' | 'SCORE';
+  type: 'SUBSTITUTION' | 'START' | 'PAUSE' | 'PERIOD_END' | 'FOUL_OUT' | 'INJURY' | 'RECOVERY' | 'SCORE' | 'TIME_CORRECTION';
   description: string;
   timestamp: string; // Game clock time
   period: number;
@@ -33,7 +34,8 @@ export interface GameEvent {
 export interface GameState {
   isRunning: boolean;
   period: number;
-  gameClockSeconds: number; // Seconds remaining in period (counting down usually, or up)
+  gameClockSeconds: number; // Total game duration
+  periodStartClockSeconds: number; // Clock value when current period started
 }
 
 export enum GameMode {
