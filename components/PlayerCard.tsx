@@ -123,30 +123,32 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       )}
 
       <div className="flex items-center gap-3 w-full relative z-10">
-        {/* Number Badge */}
-        <div className={`
-          flex items-center justify-center font-bold border-2 border-black shrink-0 font-mono relative
-          ${variant === 'COURT' ? 'w-10 h-10 text-lg bg-black text-white' : 'w-8 h-8 text-sm bg-white text-black'}
-          ${player.isFouledOut ? 'grayscale' : ''}
-          ${player.isInjured ? 'border-red-500 text-red-500 bg-red-50' : ''}
-          ${isRecentSub && !isDisabled ? 'bg-slate-400 text-white border-slate-500' : ''}
-          ${isFresh && !isDisabled ? 'bg-lime-500 text-black border-lime-600' : ''}
-        `}>
-          {player.number}
-          {player.isFouledOut && <div className="absolute inset-0 flex items-center justify-center text-red-600"><Ban size={32} className="opacity-80" /></div>}
-          {player.isInjured && <div className="absolute inset-0 flex items-center justify-center text-red-600"><Stethoscope size={20} /></div>}
-        </div>
+        {/* Number Badge - Only show for BENCH or MODAL variants per user request */}
+        {variant !== 'COURT' && (
+          <div className={`
+            flex items-center justify-center font-bold border-2 border-black shrink-0 font-mono relative
+            ${variant === 'COURT' ? 'w-10 h-10 text-lg bg-black text-white' : 'w-8 h-8 text-sm bg-white text-black'}
+            ${player.isFouledOut ? 'grayscale' : ''}
+            ${player.isInjured ? 'border-red-500 text-red-500 bg-red-50' : ''}
+            ${isRecentSub && !isDisabled ? 'bg-slate-400 text-white border-slate-500' : ''}
+            ${isFresh && !isDisabled ? 'bg-lime-500 text-black border-lime-600' : ''}
+          `}>
+            {player.number}
+            {player.isFouledOut && <div className="absolute inset-0 flex items-center justify-center text-red-600"><Ban size={32} className="opacity-80" /></div>}
+            {player.isInjured && <div className="absolute inset-0 flex items-center justify-center text-red-600"><Stethoscope size={20} /></div>}
+          </div>
+        )}
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className={`font-bold truncate text-black uppercase tracking-tight ${variant === 'COURT' ? 'text-base' : 'text-sm'} ${isDisabled ? 'line-through text-zinc-500' : ''}`}>
+            <h3 className={`font-bold truncate text-black uppercase tracking-tight ${variant === 'COURT' ? 'text-lg sm:text-xl' : 'text-sm'} ${isDisabled ? 'line-through text-zinc-500' : ''}`}>
               {player.name}
             </h3>
             
             {/* Context Icons */}
             {!isDisabled && isLongestShift && variant === 'COURT' && (
-                <span className="text-[9px] bg-red-100 text-red-600 px-1 font-bold border border-red-200 animate-pulse rounded-sm">NEXT OUT</span>
+                <span className="text-[9px] bg-red-100 text-red-600 px-1 font-bold border border-red-200 animate-pulse rounded-sm">VAIHTOON?</span>
             )}
             {!isDisabled && isCold && variant === 'BENCH' && !isRecentSub && <Snowflake size={16} className="text-blue-400" />}
             {!isDisabled && isRecentSub && <Hourglass size={14} className="text-slate-500 animate-spin-slow" />}

@@ -13,12 +13,10 @@ const DEFAULT_ROSTER: Player[] = [
 ];
 
 const CHANGELOG = [
+  { date: '2025-05-24 14:15', desc: 'Päivitys: Pelaajanumero poistettu pisteidenlaskusta ja kenttänäkymästä. Nimi on nyt pääosassa.' },
+  { date: '2025-05-24 14:00', desc: 'Päivitys: Pisteet-välilehti asetettu oletukseksi ja optimoitu näkymään ilman rullausta.' },
   { date: '2025-05-24 13:45', desc: 'Päivitys: Yläpalkin pikanäppäimet (plus) suuremmiksi.' },
   { date: '2025-05-24 13:30', desc: 'Päivitys: Yläpalkin pistelaskurin painikkeita suurennettu.' },
-  { date: '2025-05-24 13:00', desc: 'Päivitys: Pisteiden kirjausnäkymä optimoitu tabletille (suuremmat napit).' },
-  { date: '2025-05-24 12:00', desc: 'Päivitys: Älykäs peliajan skaalaus ja uusi vaihtomittari (vihreä-keltainen-punainen) pelaajakortissa.' },
-  { date: '2025-05-24 11:00', desc: 'Päivitys: Värikoodaus myös juuri kentälle tulleille (Vihreä/Salama) ja näkyvyys vaihtovalikossa.' },
-  { date: '2025-05-24 10:30', desc: 'Päivitys: Vaihtopenkin älykäs järjestys. Juuri kentältä tulleet (90s huili) näkyvät harmaalla ja siirtyvät listan hännille.' },
 ];
 
 const TODO_LIST = [
@@ -59,7 +57,7 @@ export default function App() {
   
   // UI State
   const [swapModalPlayer, setSwapModalPlayer] = useState<Player | null>(null);
-  const [activeTab, setActiveTab] = useState<'LOG' | 'NOTES' | 'POINTS'>('LOG');
+  const [activeTab, setActiveTab] = useState<'LOG' | 'NOTES' | 'POINTS'>('POINTS');
   
   const [isManagePlayersOpen, setIsManagePlayersOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
@@ -507,7 +505,7 @@ OHJEET:
               notes: fullNotes,
               scoreUs: scoreUs,
               scoreThem: scoreThem
-          };
+              };
           const updatedHistory = [newSavedGame, ...savedGames];
           setSavedGames(updatedHistory);
           localStorage.setItem('juniorBasketHistory', JSON.stringify(updatedHistory));
@@ -917,8 +915,8 @@ OHJEET:
             >
                 <div className="bg-white border-b-2 border-black p-2 md:p-3 shrink-0 flex justify-between items-center">
                     <h2 className="font-bold text-black uppercase tracking-wide flex items-center gap-2 text-sm md:text-base">
-                        <Users size={18} className="text-black"/>
-                        Kenttä <span className="font-mono">({courtPlayers.length}/{gameMode})</span>
+                        <span className="flex items-center justify-center w-6 h-6 bg-black text-white rounded-full"><Users size={14}/></span>
+                        Kenttä <span className="font-mono text-zinc-500 ml-1">({courtPlayers.length}/{gameMode})</span>
                     </h2>
                     {courtPlayers.length < gameMode && (
                         <span className="text-[10px] md:text-xs bg-black text-white px-2 py-0.5 font-bold uppercase animate-pulse">
@@ -958,6 +956,12 @@ OHJEET:
                 {/* Tabs Header */}
                 <div className="flex border-b-4 border-black shrink-0 bg-zinc-50">
                     <button 
+                        onClick={() => setActiveTab('POINTS')}
+                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r-2 border-black transition-colors ${activeTab === 'POINTS' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
+                    >
+                        <Trophy size={16} /> <span className="hidden sm:inline">Pisteet</span>
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('LOG')}
                         className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r-2 border-black transition-colors ${activeTab === 'LOG' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
                     >
@@ -965,15 +969,9 @@ OHJEET:
                     </button>
                     <button 
                         onClick={() => setActiveTab('NOTES')}
-                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r-2 border-black transition-colors ${activeTab === 'NOTES' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
+                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'NOTES' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
                     >
                         <NotebookPen size={16} /> <span className="hidden sm:inline">Muistio</span>
-                    </button>
-                     <button 
-                        onClick={() => setActiveTab('POINTS')}
-                        className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'POINTS' ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-zinc-200'}`}
-                    >
-                        <Trophy size={16} /> <span className="hidden sm:inline">Pisteet</span>
                     </button>
                 </div>
 
@@ -1012,7 +1010,7 @@ OHJEET:
                     )}
 
                     {activeTab === 'POINTS' && (
-                        <div className="absolute inset-0 p-2 flex flex-col h-full bg-zinc-100">
+                        <div className="absolute inset-0 p-2 flex flex-col h-full bg-zinc-100 overflow-hidden">
                             {/* Correction Toggle & Header - Compact */}
                             <div className="flex justify-between items-center px-1 mb-2 shrink-0 h-10">
                                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
@@ -1028,40 +1026,39 @@ OHJEET:
                                 </button>
                             </div>
 
-                            {/* Player List for Scoring - Flex-1 to fill space */}
+                            {/* Player List for Scoring - Flex-1 with NO SCROLL */}
                             {courtPlayers.length === 0 ? (
                                 <div className="flex-1 flex items-center justify-center border-2 border-dashed border-zinc-300 m-2 bg-zinc-50 rounded-lg">
                                     <p className="text-zinc-400 font-mono text-sm uppercase">Ei pelaajia kentällä</p>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto pb-2">
+                                <div className="flex-1 flex flex-col gap-2 min-h-0 pb-1">
                                     {courtPlayers.map(player => (
-                                        <div key={player.id} className="shrink-0 min-h-[80px] flex items-center gap-3 bg-white border-2 border-black px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
-                                            {/* Player Info - Bigger for Tablet */}
-                                            <div className="w-16 sm:w-24 shrink-0 flex flex-col justify-center leading-none">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="w-8 h-8 flex items-center justify-center bg-black text-white font-mono font-bold text-lg border-2 border-black">{player.number}</span>
-                                                </div>
-                                                <span className="font-bold uppercase truncate text-sm w-full leading-tight">{player.name}</span>
-                                                <div className="text-[10px] text-zinc-500 font-mono flex items-center gap-1 mt-1 font-bold">
-                                                    <Trophy size={10} className="text-yellow-600"/> {player.points}
+                                        <div key={player.id} className="flex-1 flex items-center gap-3 bg-white border-2 border-black px-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] min-h-0">
+                                            {/* Player Info - Number removed as requested */}
+                                            <div className="w-24 sm:w-32 shrink-0 flex flex-col justify-center leading-tight">
+                                                <span className="font-bold uppercase truncate text-sm sm:text-base text-black">{player.name}</span>
+                                                <div className="text-xs text-zinc-500 font-mono flex items-center gap-1 mt-1 font-bold">
+                                                    <Trophy size={12} className="text-yellow-600"/> {player.points}
                                                 </div>
                                             </div>
 
-                                            {/* Buttons - Stretch to fill height, max height REMOVED for easier touch */}
-                                            <div className="flex-1 grid grid-cols-3 gap-2 h-full py-2">
+                                            {/* Buttons - Stretch to fill remaining height */}
+                                            <div className="flex-1 grid grid-cols-3 gap-1.5 sm:gap-2 h-full py-1.5">
                                                 {[1, 2, 3].map(points => (
                                                     <button 
                                                         key={points}
                                                         onClick={() => handleScore(player.id, points)}
-                                                        className={`h-full w-full border-2 font-bold font-mono text-2xl flex items-center justify-center gap-1 transition-transform active:scale-95 touch-manipulation rounded-md
+                                                        className={`h-full w-full border-2 font-bold font-mono text-xl sm:text-2xl flex items-center justify-center gap-1 transition-transform active:scale-95 touch-manipulation rounded-md
                                                             ${isCorrectionMode 
-                                                                ? 'border-red-500 bg-red-50 text-red-600 hover:bg-red-100' 
-                                                                : 'border-zinc-300 bg-zinc-50 text-black hover:bg-white hover:border-black'
+                                                                ? 'border-red-500 bg-red-50 text-red-600' 
+                                                                : points === 1 ? 'border-zinc-300 bg-zinc-50 text-zinc-800' :
+                                                                  points === 2 ? 'border-zinc-400 bg-zinc-100 text-black shadow-sm' :
+                                                                  'border-black bg-zinc-200 text-black shadow-md'
                                                             }
                                                         `}
                                                     >
-                                                        {isCorrectionMode ? <MinusCircle size={20} strokeWidth={3} /> : <PlusCircle size={20} strokeWidth={3} />}
+                                                        {isCorrectionMode ? <MinusCircle size={18} strokeWidth={3} /> : <PlusCircle size={18} strokeWidth={3} />}
                                                         {points}
                                                     </button>
                                                 ))}
